@@ -1,0 +1,4 @@
+venv/
+testmunch.py
+*.jpg
+*.png
