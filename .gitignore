@@ -2,3 +2,4 @@ venv/
 testmunch.py
 *.jpg
 *.png
+mongo.py

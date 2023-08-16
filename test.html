@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/themes/base/jquery-ui.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-ui-timepicker-addon/1.6.3/jquery-ui-timepicker-addon.min.css" />
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.min.css" integrity="sha512-b6CPl1eORfMoZgwWGEYWNxYv79KG0dALXfVu4uReZJOXAfkINSK4UhA0ELwGcBBY7VJN7sykwrCGQnbS8qTKhQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+
+<body>
+    <form action="">
+        <input type="text" id="datepicker_from" name="start" placeholder="Choose Date and Time" />
+        <input type="text" id="datepicker_to" name="end" placeholder="Choose Date and Time" />
+        <button type="submit">Enviar</button>
+    </form>
+
+    <svg id="gantt"></svg>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-ui-timepicker-addon/1.6.3/jquery-ui-timepicker-addon.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.min.js" integrity="sha512-HyGTvFEibBWxuZkDsE2wmy0VQ0JRirYgGieHp0pUmmwyrcFkAbn55kZrSXzCgKga04SIti5jZQVjbTSzFpzMlg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <script>
+        jQuery(function($) {
+            let opt = {
+                dateFormat: 'yy-mm-dd',
+                timeFormat: 'HH:mm',
+                defaultDate: '+1w',
+                yearRange: '2019:2023',
+                numberOfMonths: 1,
+                showOtherMonths: true,
+                showButtonPanel: true,
+                showWeek: true,
+                changeMonth: true,
+                changeYear: true,
+                selectOtherMonths: true,
+                controlType: 'select',
+                oneLine: true,
+                monthNames: ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'novembro', 'dezembro'],
+                monthNamesShort: ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'nov', 'dez'],
+                weekHeader: 'Sm',
+                dayNames: ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'],
+                dayNamesMin: ['D', 'S', 'T', 'Q', 'Q', 'S', 'S', 'D'],
+                currentText: 'Agora',
+                doneText: 'Feito',
+                closeText: 'Fechar',
+                // showAnim: 'fold',
+            }
+            let $datepicker_from = $("#datepicker_from").datetimepicker(opt);
+            let $datepicker_to = $("#datepicker_to").datetimepicker(opt);
+        });
+
+        var tasks = [
+        {
+            id: 'Task 1',
+            name: 'Redesign website',
+            start: '2023-08-08 00:10:00',
+            end: '2023-08-08 00:10:30',
+            progress: 20,
+            
+        },
+        {
+            id: 'Task 1',
+            name: 'Redesign website',
+            start: '2023-08-08 00:10:00',
+            end: '2023-08-08 00:10:30',
+            progress: 20,
+            
+        }
+        ]
+        var gantt = new Gantt("#gantt", tasks);
+        gantt.change_view_mode('Quarter Day')
+    </script>
+
+</body>
+</html>

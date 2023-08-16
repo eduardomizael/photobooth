@@ -1,5 +1,7 @@
 import cv2
 import time
+from threading import Timer
+from datetime import datetime
 
 def draw_countdown(frame, countdown):
     font = cv2.FONT_HERSHEY_SIMPLEX
@@ -48,17 +50,49 @@ def capture_photos(interval, num_photos):
     camera.release()
     cv2.destroyAllWindows()
 
+
+def take_picture(frame):
+    print("Take picture")
+    timestamp = time.time()
+    image_name = f"photo_{timestamp}.png"
+    cv2.imwrite(image_name, frame)
+
+
 if __name__ == "__main__":
     camera = cv2.VideoCapture(0)
-    
+    if not camera.isOpened():
+        print("Não foi possível abrir a câmera.")
+        exit()
+    interval = 5
+    num_photos = 5
+
+    # x1, y1 = 160, 40
+    # x2, y2 = 960, 640
+
+    start_time = time.time()
     while True:
         ret, frame = camera.read()
-
         if not ret:
             print("Não foi possível capturar a imagem.")
             break
+        
+        time_passed = time.time() - start_time
+        if (time_passed - interval) < 3:
+            countdown = 3 - int(time_passed)
+            draw_countdown(frame, countdown)
+            cv2.imshow("Photobooth", frame)
+        else:
+            cv2.imshow("Photobooth", frame)
 
-        cv2.imshow("Photobooth", frame)
+        time_passed = time.time() - start_time
+        if time_passed > interval:
+            take_picture(frame)
+            start_time = time.time()
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    
 
     #     # Encerre a captura quando a tecla 'q' for pressionada
     #     if cv2.waitKey(1) & 0xFF == ord('q'):
