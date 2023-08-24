@@ -1,47 +1,47 @@
 from PIL import Image
 import datetime
 
-# Carregar a imagem de fundo e a imagem para sobrepor
-fundo = Image.open("fundo01.png").convert("RGBA")
-img1 = Image.open("img1.jpg").convert("RGBA")
-img2 = Image.open("img2.jpg").convert("RGBA")
-img3 = Image.open("img3.jpg").convert("RGBA")
-overlay = Image.open("overlay01.png").convert("RGBA")
-
 def crop_center(image):
     w, h = image.size
-    if w / h > 16 / 9:
-        new_h = h
-        new_w = h * 16 / 9
-        x = (w - new_w) / 2
-        y = 0
+    if w/h > 16/9:
+        offset = int(abs(w - h * 16 / 9) / 2)
+        crop_settings = (offset, 0, w - offset, h)
     else:
-        new_w = w
-        new_h = w * 9 / 16
-        x = 0
-        y = (h - new_h) / 2
-    return image.crop((x, y, x + new_w, y + new_h))
+        offset = int(abs(h - w * 9 / 16) / 2)
+        crop_settings = (0, offset, w, h - offset)
+    
+    return image.crop(crop_settings)
 
 
-# redimensionar as imagens para o tamanho de 533x300
-img1 = img1.resize((533, 300))
-img2 = img2.resize((533, 300))
-img3 = img3.resize((533, 300))
+def resize(image, size=(533, 300)):
+    return image.resize(size)
 
-# Criar uma nova imagem com o mesmo tamanho da imagem de fundo
-nova_imagem = Image.new("RGBA", fundo.size)
-nova_imagem.paste(fundo, (0, 0))  # Colar a imagem de fundo na nova imagem
-# inserir imagem 1 na posição (250, 118)	
-nova_imagem.paste(img1, (250, 118), img1)
-# inserir imagem 2 na posição (1119, 118)
-nova_imagem.paste(img2, (1119, 118), img2)
-# inserir imagem 3 na posição (685, 566)
-nova_imagem.paste(img3, (685, 566), img3)
-# inserir overlay na posição (0, 0)
-# nova_imagem.paste(overlay, (0, 0), overlay)
-# abrir a imagem com o visualizador padrão do sistema
-# nova_imagem.show()
 
-# Salvar a nova imagem
-image_name = f"photo_{datetime.datetime.now():%Y%m%d%H%M%S}.png"
-nova_imagem.save(image_name)
+def compose(base, overlay, images):
+    composed = Image.new("RGBA", base.size)
+    composed.paste(images[0], (250, 118), images[0])
+    composed.paste(images[1], (1119, 118), images[1])
+    composed.paste(images[2], (685, 566), images[2])
+    composed.paste(overlay, (0, 0), overlay)
+    return composed
+
+
+def save(image, name=None, format="PNG"):
+    if not name:
+        name = f"photo_{datetime.datetime.now():%Y%m%d%H%M%S}"
+    format = format.lower()
+    image.save(f'{name}.{format}', format)
+
+
+if __name__ == '__main__':
+    
+# Carregar a imagem de fundo e a imagem para sobrepor
+    base = Image.open("fundo01.png").convert("RGBA")
+    overlay = Image.open("overlay01.png").convert("RGBA")
+
+    image_paths = ['img/img4.webp', 'img/img2.jpg', 'img/img3.jpg']
+    imgs = [Image.open(i).convert('RGBA') for i in image_paths]
+
+    for i, img in enumerate(imgs):
+        cropped_img = crop_center(img)
+        save(cropped_img, name=f'img_{i}_cropped', format='PNG')

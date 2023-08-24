@@ -1,5 +1,7 @@
 venv/
 testmunch.py
-*.jpg
-*.png
 mongo.py
+img/
+*.html
+/*.png
+*.pyc
