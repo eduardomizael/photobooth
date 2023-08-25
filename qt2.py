@@ -2,8 +2,8 @@ import sys
 import time
 import cv2
 import numpy as np
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel
-from PyQt5.QtCore import Qt, QThread, QTimer, pyqtSignal
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton
+from PyQt5.QtCore import Qt, QThread, QTimer, pyqtSignal, QRect
 from PyQt5.QtGui import QPixmap, QImage
 from qt_window import Ui_MainWindow
 
@@ -21,12 +21,60 @@ class WebcamThread(QThread):
             else:
                 break
 
+class TakePictureThread(QThread):
+    def __init__(self, window):
+        super().__init__()
+        self.window = window
+
+    def run(self):
+        def show_counter():
+            time.sleep(1)
+            self.window.img_counter.setPixmap(self.window.counters[2])
+            self.window.img_counter.setVisible(True)
+            time.sleep(1)
+            self.window.img_counter.setPixmap(self.window.counters[1])
+            time.sleep(1)
+            self.window.img_counter.setPixmap(self.window.counters[0])
+            time.sleep(1)
+            self.window.img_counter.setVisible(False)
+        
+        def toggle_flash():
+            flash = self.window.flash_label
+            flare = self.window.flare_label
+
+            flare.setVisible(True)
+            flare.raise_()
+            time.sleep(0.1)
+            flash.setVisible(True)
+            flash.raise_()
+            time.sleep(0.1)
+
+            flash.setVisible(False)
+            flare.setVisible(False)
+
+        show_counter()
+        toggle_flash()
+        self.window.img_take1.setPixmap(self.window.actual_frame)
+        show_counter()
+        toggle_flash()
+        self.window.img_take2.setPixmap(self.window.actual_frame)
+        show_counter()
+        toggle_flash()
+        self.window.img_take3.setPixmap(self.window.actual_frame)
+
 class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setupUi(self)
         self.showFullScreen()
 
+
+        # self.btn_toggle = QPushButton('flash', self.centralwidget, )
+        # self.btn_toggle.setObjectName(u"btn_toggle")
+        # self.btn_toggle.setGeometry(0, 0, 100, 100)
+        # self.btn_toggle.raise_()
+        # self.btn_toggle.setVisible(True)
+        # self.btn_toggle.clicked.connect(self.toggle_flash)
         self.img_take1.setPixmap(QPixmap("img1.jpg"))
         self.img_take2.setPixmap(QPixmap("img2.jpg"))
         self.img_take3.setPixmap(QPixmap("img3.jpg"))
@@ -42,8 +90,25 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.actual_frame = None
 
-        self.pushButton.clicked.connect(self.img_take)
+        self.pushButton.clicked.connect(self.take_picture)
 
+    def toggle_flash(self):
+            flash = self.flash_label
+            flare = self.flare_label
+
+            flare.setVisible(True)
+            flare.raise_()
+            time.sleep(0.1)
+            flash.setVisible(True)
+            flash.raise_()
+            time.sleep(0.1)
+
+            flash.setVisible(False)
+            flare.setVisible(False)
+
+    def take_picture(self):
+        self.tp_thread = TakePictureThread(self)
+        self.tp_thread.start()
 
     def update_image(self, frame):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
