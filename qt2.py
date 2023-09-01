@@ -3,9 +3,23 @@ import time
 import cv2
 import numpy as np
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton
-from PyQt5.QtCore import Qt, QThread, QTimer, pyqtSignal, QRect
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtCore import Qt, QThread, QTimer, pyqtSignal, QRect, QRunnable, QThreadPool, QSize
+from PyQt5.QtGui import QPixmap, QImage, QIcon
 from qt_window import Ui_MainWindow
+from image_composer import ImageComposer
+from PIL import Image
+
+
+class WebcamTask(QRunnable):
+    def run(self):
+        capture = cv2.VideoCapture(0)
+
+        while True:
+            ret, frame = capture.read()
+            if ret:
+                self.update_signal.emit(frame)
+            else:
+                break
 
 
 class WebcamThread(QThread):
@@ -54,43 +68,39 @@ class TakePictureThread(QThread):
 
         show_counter()
         toggle_flash()
-        self.window.img_take1.setPixmap(self.window.actual_frame)
+        self.window.take_picture(1)
         show_counter()
         toggle_flash()
-        self.window.img_take2.setPixmap(self.window.actual_frame)
+        self.window.take_picture(2)
         show_counter()
         toggle_flash()
-        self.window.img_take3.setPixmap(self.window.actual_frame)
+        self.window.take_picture(3)
+        self.window.compose()
 
 class MainWindow(QMainWindow, Ui_MainWindow):
+
     def __init__(self) -> None:
         super().__init__()
         self.setupUi(self)
         self.showFullScreen()
 
-
-        # self.btn_toggle = QPushButton('flash', self.centralwidget, )
-        # self.btn_toggle.setObjectName(u"btn_toggle")
-        # self.btn_toggle.setGeometry(0, 0, 100, 100)
-        # self.btn_toggle.raise_()
-        # self.btn_toggle.setVisible(True)
-        # self.btn_toggle.clicked.connect(self.toggle_flash)
-        self.img_take1.setPixmap(QPixmap("img1.jpg"))
-        self.img_take2.setPixmap(QPixmap("img2.jpg"))
-        self.img_take3.setPixmap(QPixmap("img3.jpg"))
-        self.img1_taken = False
-        self.img2_taken = False
-        self.img3_taken = False
+        self.img_takes = [QPixmap(f"img{i}.jpg") for i in range(1, 4)]
         self.counters = [QPixmap(f"elements/counter_{i}.png") for i in range(1, 4)]
+
+        self.img_take1.setPixmap(QPixmap())
+        self.img_take2.setPixmap(QPixmap())
+        self.img_take3.setPixmap(QPixmap())
         self.img_counter.setVisible(False)
 
         self.webcam_thread = WebcamThread()
         self.webcam_thread.update_signal.connect(self.update_image)
         self.webcam_thread.start()
 
+        self.raw_frame = None
         self.actual_frame = None
 
-        self.pushButton.clicked.connect(self.take_picture)
+        self.pushButton.clicked.connect(self.take_pictures)
+        self.img_preview.clicked.connect(self.clear_pictures)
 
     def toggle_flash(self):
             flash = self.flash_label
@@ -106,45 +116,79 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             flash.setVisible(False)
             flare.setVisible(False)
 
-    def take_picture(self):
+    def take_picture(self, control):
+        match control:
+            case 1:
+                self.img_take1.setPixmap(self.actual_frame)
+                self.img1 = self.frame_to_pil(self.raw_frame)
+            case 2:
+                self.img_take2.setPixmap(self.actual_frame)
+                self.img2 = self.frame_to_pil(self.raw_frame)
+            case 3:
+                self.img_take3.setPixmap(self.actual_frame)
+                self.img3 = self.frame_to_pil(self.raw_frame)
+
+    def clear_pictures(self):
+        # self.img_take1.setPixmap(self.img_takes[0])
+        # self.img_take2.setPixmap(self.img_takes[1])
+        # self.img_take3.setPixmap(self.img_takes[2])
+        self.img_preview.setVisible(False)
+        self.img1 = None
+        self.img2 = None
+        self.img3 = None
+        self.pushButton.setEnabled(True)
+
+    def take_pictures(self):
+        self.pushButton.setEnabled(False)
         self.tp_thread = TakePictureThread(self)
         self.tp_thread.start()
 
-    def update_image(self, frame):
+    def frame_to_pixmap(self, frame):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = frame.shape
         bytes_per_line = ch * w
         q_img = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(q_img)
-        self.actual_frame = pixmap
-        self.img_cam.setPixmap(pixmap)
+        return pixmap
 
-    def show_counter(self, take_img):
-        self.img_counter.setVisible(True)
-        self.img_counter.setPixmap(self.counters[2])
-        time.sleep(1)
-        self.img_counter.setPixmap(self.counters[1])
-        time.sleep(1)
-        self.img_counter.setPixmap(self.counters[0])
-        time.sleep(1)
-        self.img_counter.setVisible(False)
-        if take_img == 1:
-            self.img_take1.setPixmap(self.actual_frame)
-        elif take_img == 2:
-            self.img_take2.setPixmap(self.actual_frame)
-        elif take_img == 3:
-            self.img_take3.setPixmap(self.actual_frame)
+    def frame_to_pil(self, frame):
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+        return Image.fromarray(frame)
 
-    def img_take(self):
-        QTimer.singleShot(2000, lambda: self.show_counter(3))
-        
-        QTimer.singleShot(3000, lambda: self.show_counter(2))
-        QTimer.singleShot(4000, lambda: self.show_counter(1))
-        QTimer.singleShot(5000, lambda: self.img_counter.setVisible(False))
+    def update_image(self, frame):
+        self.raw_frame = frame
+        self.actual_frame = self.frame_to_pixmap(frame)
+        self.img_cam.setPixmap(self.actual_frame)
+
+    def compose(self) -> None:
+        """Compor a imagem final.
+        :return: None
+        """
+        imgs = [self.img1, self.img2, self.img3]
+        # imgs = []
+        # for i in range(4):
+        #     imgs.append(self.frame_to_pil(self.raw_frame))
+
+        ic = ImageComposer(images=imgs)
+        composed_photo = ic.photo_compose()
+        composed_media = ic.media_compose()
+        self.load_preview_image(str(composed_photo[1]))
     
+    def load_preview_image(self, path) -> None:
+        """Carrega a imagem de preview.
+        :param path: Caminho do arquivo
+        :return: None
+        """
+        icon = QIcon()
+        icon.addFile(path, self.img_preview.size(), QIcon.Normal, QIcon.Off)
+        self.img_preview.setIcon(icon)
+        self.img_preview.setIconSize(self.img_preview.size())
+        # pixmap = QPixmap(path)
+        # pixmap = pixmap.scaled(self.img_preview.size(), Qt.KeepAspectRatio)
+        # self.img_preview.setPixmap(pixmap)
+        self.img_preview.setVisible(True)
+        self.img_preview.raise_()
+
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec_())
+    pass
